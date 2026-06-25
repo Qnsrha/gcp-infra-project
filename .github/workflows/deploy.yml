@@ -1,0 +1,64 @@
+name: Deploy to GKE
+
+on:
+  push:
+    branches:
+      - main # main 브랜치에 코드가 push되면 작동합니다.
+
+permissions:
+  contents: 'read'
+  id-token: 'write' # OIDC 보안 인증을 위해 반드시 필요합니다.
+
+env:
+  PROJECT_ID: 'infra-project-492107' # 본인의 GCP 프로젝트 ID 기입
+  GAR_LOCATION: 'asia-northeast3'
+  REPOSITORY: 'project-docker-repo'
+  IMAGE: 'portfolio-app'
+  GKE_CLUSTER: 'gke-cluster'
+  GKE_ZONE: 'asia-northeast3-a'
+
+jobs:
+  setup-build-publish-deploy:
+    name: Setup, Build, Publish, and Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # [핵심 보안 단계] 비밀 키 없이 GCP와 안전하게 OIDC 신원 인증을 합니다.
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        # 테라폼 Output으로 나온 workload_identity_provider 값을 여기에 붙여넣으세요.
+        workload_identity_provider: 'projects/746239733338/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider'
+        # 테라폼 Output으로 나온 service_account_email 값을 여기에 붙여넣으세요.
+        service_account: 'github-deployer@infra-project-492107.iam.gserviceaccount.com'
+
+    # gcloud 및 kubectl 도구를 깃허브 가상 컴퓨터에 세팅합니다.
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    # Docker가 GCP 저장소(Artifact Registry)에 로그인할 수 있도록 인증을 연동합니다.
+    - name: Configure Docker
+      run: |-
+        gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
+
+    # 우리가 만든 App 코드를 도커 이미지로 굽고 빌드합니다.
+    - name: Build and Push Docker Image
+      run: |-
+        docker build -t ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:${{ github.sha }} .
+        docker push ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:${{ github.sha }}
+
+    # GKE 클러스터에 접속하기 위한 자격증명을 원격으로 따옵니다.
+    - name: Get GKE Credentials
+      uses: google-github-actions/get-gke-credentials@v2
+      with:
+        cluster_name: ${{ env.GKE_CLUSTER }}
+        location: ${{ env.GKE_ZONE }}
+
+    # k8s.yaml 파일 내부의 이미지 경로를 방금 빌드한 따끈따끈한 이미지 태그(${{ github.sha }})로 치환한 뒤 GKE에 배포합니다.
+    - name: Deploy to GKE
+      run: |-
+        sed -i 's|portfolio-app:latest|portfolio-app:${{ github.sha }}|g' k8s.yaml
+        kubectl apply -f k8s.yaml
+        kubectl rollout status deployment/portfolio-app-deployment

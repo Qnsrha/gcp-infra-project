@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portfolio-app-deployment
+  labels:
+    app: portfolio-app
+spec:
+  replicas: 2 # 안정성을 위해 서버 인스턴스를 2대로 이중화합니다. (고가용성)
+  selector:
+    matchLabels:
+      app: portfolio-app
+  template:
+    metadata:
+      labels:
+        app: portfolio-app
+    spec:
+      containers:
+      - name: web-app
+        # 우리가 아까 테라폼으로 만든 GCP Artifact Registry 저장소 경로를 지정합니다.
+        image: asia-northeast3-docker.pkg.dev/infra-project-492107/project-docker-repo/portfolio-app:latest
+        ports:
+        - containerPort: 8080
+        # 서버가 잘 살아있는지 쿠버네티스가 감시하는 헬스체크 경로입니다.
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: portfolio-app-service
+spec:
+  type: LoadBalancer # 외부 사용자가 접속할 수 있도록 GCP 내장 부하분산기(Load Balancer)를 자동으로 생성합니다.
+  selectors:
+    app: portfolio-app
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
