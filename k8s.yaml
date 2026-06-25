@@ -34,7 +34,7 @@ metadata:
   name: portfolio-app-service
 spec:
   type: LoadBalancer # 외부 사용자가 접속할 수 있도록 GCP 내장 부하분산기(Load Balancer)를 자동으로 생성합니다.
-  selectors:
+  selector:
     app: portfolio-app
   ports:
   - protocol: TCP
