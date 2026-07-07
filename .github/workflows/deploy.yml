@@ -10,7 +10,7 @@ permissions:
   id-token: 'write' # OIDC 보안 인증을 위해 반드시 필요합니다.
 
 env:
-  PROJECT_ID: 'infra-project-492107' # 본인의 GCP 프로젝트 ID 기입
+  PROJECT_ID: 'infra-project-501705' # 본인의 GCP 프로젝트 ID 기입
   GAR_LOCATION: 'asia-northeast3'
   REPOSITORY: 'project-docker-repo'
   IMAGE: 'portfolio-app'
@@ -30,9 +30,9 @@ jobs:
       uses: google-github-actions/auth@v2
       with:
         # 테라폼 Output으로 나온 workload_identity_provider 값을 여기에 붙여넣으세요.
-        workload_identity_provider: 'projects/746239733338/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider'
+        workload_identity_provider: 'projects/545417773075/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider'
         # 테라폼 Output으로 나온 service_account_email 값을 여기에 붙여넣으세요.
-        service_account: 'github-deployer@infra-project-492107.iam.gserviceaccount.com'
+        service_account: 'github-deployer@infra-project-501705.iam.gserviceaccount.com'
 
     # gcloud 및 kubectl 도구를 깃허브 가상 컴퓨터에 세팅합니다.
     - name: Set up Cloud SDK
