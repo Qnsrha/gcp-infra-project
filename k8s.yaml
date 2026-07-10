@@ -17,7 +17,7 @@ spec:
       containers:
       - name: web-app
         # 우리가 아까 테라폼으로 만든 GCP Artifact Registry 저장소 경로를 지정합니다.
-        image: asia-northeast3-docker.pkg.dev/infra-project-492107/project-docker-repo/portfolio-app:latest
+        image: asia-northeast3-docker.pkg.dev/infra-project-501705/project-docker-repo/portfolio-app:latest
         ports:
         - containerPort: 8080
         # 서버가 잘 살아있는지 쿠버네티스가 감시하는 헬스체크 경로입니다.
