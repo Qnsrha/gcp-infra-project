@@ -1,5 +1,5 @@
 provider "google" {
-    project = "infra-project-492107"
+    project = "infra-project-501705"
     region = "asia-northeast3"
 }
 
@@ -54,6 +54,7 @@ resource "google_project_service" "container" {
 resource "google_container_cluster" "primary" {
     name = "gke-cluster"
     location = "asia-northeast3-a"
+    deletion_protection = false
 
     network = google_compute_network.vpc_network.id
     subnetwork = google_compute_subnetwork.private_subnet.id
@@ -138,13 +139,13 @@ resource "google_service_account" "github_deployer" {
 }
 
 resource "google_project_iam_member" "repo_admin" {
-    project = "infra-project-492107"
+    project = "infra-project-501705"
     role = "roles/artifactregistry.writer"
     member = "serviceAccount:${google_service_account.github_deployer.email}"
 }
 
 resource "google_project_iam_member" "gke_developer" {
-    project = "infra-project-492107"
+    project = "infra-project-501705"
     role = "roles/container.developer"
     member = "serviceAccount:${google_service_account.github_deployer.email}"
 }
